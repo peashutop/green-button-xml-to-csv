@@ -72,9 +72,8 @@ doc.xpath('//entry').each do |entry|
     rt = reading_types[rt_id]
     next unless rt && rt[:uom] == '38'
     uom_code = rt[:uom]
-    uom_name = UOM_MAP[uom_code]    
-    block_duration = text_or_nil(ib, './interval/duration')&.to_i
-    block_start    = text_or_nil(ib, './interval/start')&.to_i
+    uom_name = UOM_MAP[uom_code]
+
     ib.xpath('./IntervalReading').each do |ir|
       start_epoch = text_or_nil(ir, './timePeriod/start')&.to_i
       duration_s  = text_or_nil(ir, './timePeriod/duration')&.to_i
@@ -85,11 +84,9 @@ doc.xpath('//entry').each do |entry|
         start_utc.iso8601,
         end_utc.iso8601,
         duration_s,
-        value,        
+        value,
         uom_code,
-        uom_name,      
-        block_start,
-        block_duration        
+        uom_name
       ]
     end
   end
@@ -99,11 +96,9 @@ headers = [
   'start_utc',
   'end_utc',
   'duration_seconds',
-  'value',  
+  'value',
   'uom_code',
-  'uom_name',  
-  'block_start_epoch',
-  'block_duration_seconds',  
+  'uom_name'
 ]
 
 if OUTPUT
