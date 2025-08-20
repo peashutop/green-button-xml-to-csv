@@ -13,10 +13,15 @@ require 'time'
 INPUT  = ARGV[0] or abort "Usage: ruby #{$0} input.xml [output.csv]"
 OUTPUT = ARGV[1]
 
-# ESPI UOM codes we care about
+# From https://utilityapi.com/docs/greenbutton/xml
 UOM_MAP = {
   '38' => 'Watts',
-  '72' => 'Watt-hours'  # Not used for now but maybe later
+  '72' => 'Watt-hours'
+}
+
+METER_READING_KIND_MAP = {
+  '8' => 'demand',
+  '12' => 'energy'
 }
 
 def text_or_nil(node, xpath)
@@ -34,7 +39,8 @@ doc.xpath('//entry').each do |entry|
   if rt
     id = text_or_nil(entry, './id')
     reading_types[id] = {
-      uom: text_or_nil(rt, './uom')
+      uom:  text_or_nil(rt, './uom'),
+      kind: text_or_nil(rt, './kind')
     }
   end
 end
@@ -70,9 +76,10 @@ doc.xpath('//entry').each do |entry|
     mr_id = $1
     rt_id = meter_reading_to_rt[mr_id]
     rt = reading_types[rt_id]
-    next unless rt && rt[:uom] == '38'
+    next unless rt && (rt[:uom] == '38' || rt[:uom] == '72')
     unit_of_measurement_code = rt[:uom]
     unit_of_measurement_name = UOM_MAP[unit_of_measurement_code]
+    kind_name = METER_READING_KIND_MAP[rt[:kind]]
 
     ib.xpath('./IntervalReading').each do |ir|
       start_epoch = text_or_nil(ir, './timePeriod/start')&.to_i
@@ -84,7 +91,8 @@ doc.xpath('//entry').each do |entry|
         start_epoch,
         end_epoch,        
         value,        
-        unit_of_measurement_name
+        unit_of_measurement_name,
+        kind_name
       ]
     end
   end
@@ -94,7 +102,8 @@ headers = [
   'start_epoch',
   'end_epoch',  
   'value',  
-  'unit'
+  'unit',
+  'kind'
 ]
 
 if OUTPUT
