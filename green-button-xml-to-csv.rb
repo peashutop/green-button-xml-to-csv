@@ -15,8 +15,8 @@ OUTPUT = ARGV[1]
 
 # ESPI UOM codes we care about
 UOM_MAP = {
-  '38' => 'W',  # Watts
-  '72' => 'Wh'  # Watt-hours (we skip these lines for now)
+  '38' => 'Watts',
+  '72' => 'Watt-hours'  # Not used for now but maybe later
 }
 
 def text_or_nil(node, xpath)
@@ -71,34 +71,30 @@ doc.xpath('//entry').each do |entry|
     rt_id = meter_reading_to_rt[mr_id]
     rt = reading_types[rt_id]
     next unless rt && rt[:uom] == '38'
-    uom_code = rt[:uom]
-    uom_name = UOM_MAP[uom_code]
+    unit_of_measurement_code = rt[:uom]
+    unit_of_measurement_name = UOM_MAP[unit_of_measurement_code]
 
     ib.xpath('./IntervalReading').each do |ir|
       start_epoch = text_or_nil(ir, './timePeriod/start')&.to_i
-      duration_s  = text_or_nil(ir, './timePeriod/duration')&.to_i
-      value   = text_or_nil(ir, './value')&.to_i
-      start_utc = Time.at(start_epoch).utc
-      end_utc   = Time.at(start_epoch + duration_s).utc
+      duration_seconds  = text_or_nil(ir, './timePeriod/duration')&.to_i
+      end_epoch   = start_epoch + duration_seconds
+      value = text_or_nil(ir, './value')&.to_i
+            
       rows << [
-        start_utc.iso8601,
-        end_utc.iso8601,
-        duration_s,
-        value,
-        uom_code,
-        uom_name
+        start_epoch,
+        end_epoch,        
+        value,        
+        unit_of_measurement_name
       ]
     end
   end
 end
 
 headers = [
-  'start_utc',
-  'end_utc',
-  'duration_seconds',
-  'value',
-  'uom_code',
-  'uom_name'
+  'start_epoch',
+  'end_epoch',  
+  'value',  
+  'unit'
 ]
 
 if OUTPUT
